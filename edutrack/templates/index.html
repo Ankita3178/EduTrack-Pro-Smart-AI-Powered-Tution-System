@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduTrack Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #1c2333;
+    --border: #30363d; --accent: #e94560; --accent2: #2980b9;
+    --accent3: #27ae60; --purple: #8e44ad;
+    --text: #e6edf3; --text2: #8b949e;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* TOAST */
+  #toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: min(95vw, 520px); }
+  .toast { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-weight: 500; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); animation: slideDown .3s ease; border-left: 3px solid var(--accent); }
+  @keyframes slideDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* LAYOUT */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+  #sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform .3s; }
+  #main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  #topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  #menu-btn { background: none; border: none; color: var(--text); cursor: pointer; font-size: 20px; padding: 4px; display: none; }
+  #topbar h1 { font-size: 18px; font-weight: 700; }
+  #topbar h1 span { color: var(--accent); }
+  #topbar .badge { margin-left: auto; background: var(--accent); color: white; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+
+  /* SIDEBAR */
+  .sidebar-logo { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo h2 { font-size: 20px; font-weight: 700; } .sidebar-logo h2 span { color: var(--accent); }
+  .sidebar-logo p { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .sidebar-section { padding: 12px 8px 4px; font-size: 10px; font-weight: 700; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin: 1px 8px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all .15s; border: none; background: none; width: calc(100% - 16px); text-align: left; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--accent); color: white; }
+  .nav-item .icon { font-size: 15px; width: 20px; text-align: center; }
+  .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid var(--border); }
+  .role-badge-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+  .role-badge-box .role-name { font-weight: 700; color: var(--accent); }
+
+  /* PAGE */
+  #content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .page { display: none; } .page.active { display: block; }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+  .page-title span { color: var(--accent); }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  input[type=text], input[type=password], input[type=date], select, textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: var(--font); font-size: 14px; padding: 10px 14px; outline: none; transition: border .2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+  select option { background: var(--bg); }
+  textarea { resize: vertical; min-height: 80px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--accent2); color: white; } .btn-primary:hover { background: #3498db; }
+  .btn-danger  { background: var(--red); color: white; }
+  .btn-success { background: var(--accent3); color: white; }
+  .btn-purple  { background: var(--purple); color: white; }
+  .btn-red     { background: var(--accent); color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* GRIDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  @media(max-width:700px) { .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
+  @media(max-width:900px) { .grid-3,.grid-4 { grid-template-columns: 1fr 1fr; } }
+
+  /* STAT */
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .stat-card .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-bottom: 6px; }
+  .stat-card .stat-value { font-size: 28px; font-weight: 700; font-family: var(--mono); }
+  .stat-card .stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .stat-card.accent { border-color: var(--accent); } .stat-card.accent .stat-value { color: var(--accent); }
+  .stat-card.green  { border-color: var(--green);  } .stat-card.green .stat-value  { color: var(--green);  }
+  .stat-card.blue   { border-color: var(--accent2);} .stat-card.blue .stat-value   { color: var(--accent2);}
+  .stat-card.purple { border-color: var(--purple); } .stat-card.purple .stat-value { color: var(--purple); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .badge-p   { background: #1f4d2e; color: var(--green);  padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+  .badge-a   { background: #4d1f1f; color: var(--red);    padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+  .badge-ok  { background: #1f3d1f; color: var(--green);  padding: 3px 8px; border-radius: 4px; font-size: 11px; }
+  .badge-warn{ background: #3d3d1f; color: var(--yellow); padding: 3px 8px; border-radius: 4px; font-size: 11px; }
+  .badge-danger { background: #3d1f1f; color: var(--red); padding: 3px 8px; border-radius: 4px; font-size: 11px; }
+
+  /* LOGIN */
+  #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); padding: 20px; }
+  .login-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; }
+  .login-box h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .login-box h1 span { color: var(--accent); }
+  .login-box p { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
+  .login-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .login-tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text2); font-family: var(--font); font-weight: 600; font-size: 13px; cursor: pointer; transition: all .15s; }
+  .login-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* CHAT */
+  #chat-page { display: none; flex-direction: column; height: 100%; }
+  #chat-page.active { display: flex; }
+  #chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .chat-bubble.user { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-bubble.ai { background: var(--bg3); border: 1px solid var(--border); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .chat-bubble.thinking { opacity: .6; font-style: italic; }
+  #chat-input-row { display: flex; gap: 10px; padding: 16px; background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0; }
+  #chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font); font-size: 14px; padding: 12px 16px; outline: none; resize: none; height: 48px; }
+  #chat-input:focus { border-color: var(--accent); }
+
+  /* NOTES */
+  .note-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .note-card .note-student { font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+  .note-card .note-text { font-size: 14px; }
+  .note-card .note-meta { font-size: 11px; color: var(--text2); margin-top: 6px; display: flex; align-items: center; justify-content: space-between; }
+  .note-card.has-file { border-left: 3px solid var(--accent2); }
+
+  /* UPLOAD */
+  .upload-area { border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; transition: all .2s; }
+  .upload-area:hover { border-color: var(--accent2); background: rgba(41,128,185,.06); }
+  .upload-area .icon { font-size: 32px; }
+
+  /* ATTENDANCE */
+  .att-mark-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+  .att-mark-row:last-child { border-bottom: none; }
+  .att-name { flex: 1; font-size: 14px; }
+  .att-btn { padding: 6px 14px; border-radius: 6px; border: 2px solid transparent; font-family: var(--font); font-weight: 700; font-size: 13px; cursor: pointer; transition: all .15s; background: var(--bg); color: var(--text2); }
+  .att-btn.present.active { background: var(--green); color: #0d1117; border-color: var(--green); }
+  .att-btn.absent.active  { background: var(--red);   color: white;   border-color: var(--red);   }
+  .att-btn:not(.active):hover { background: var(--bg3); }
+
+  /* ANNOUNCEMENT */
+  .ann-card { border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 4px solid; }
+  .ann-card.general { background: rgba(41,128,185,.1); border-color: var(--accent2); }
+  .ann-card.test    { background: rgba(142,68,173,.1);  border-color: var(--purple); }
+  .ann-card.fee     { background: rgba(231,76,60,.1);   border-color: var(--accent); }
+  .ann-card .ann-type  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; color: var(--text2); }
+  .ann-card .ann-title { font-size: 15px; font-weight: 700; }
+  .ann-card .ann-msg   { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .ann-card .ann-date  { font-size: 11px; color: var(--text2); margin-top: 8px; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ML */
+  .ml-result { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 12px; }
+  .ml-result .ml-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text2); margin-bottom: 6px; }
+  .ml-result .ml-value { font-size: 24px; font-weight: 700; font-family: var(--mono); }
+  .ml-result .ml-sub   { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .ml-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .ml-badge.high   { background: #4d1f1f; color: var(--red); }
+  .ml-badge.medium { background: #3d3d1f; color: var(--yellow); }
+  .ml-badge.low    { background: #1f3d1f; color: var(--green); }
+
+  /* MISC */
+  .empty-state { text-align: center; padding: 40px; color: var(--text2); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .flex-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .flex-row .form-group { flex: 1; min-width: 140px; margin-bottom: 0; }
+  .link-btn { background: none; border: none; color: var(--accent2); font-family: var(--font); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 0; }
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .overlay-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 199; }
+  .overlay-backdrop.show { display: block; }
+
+  @media(max-width:768px) {
+    #sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; transform: translateX(-240px); }
+    #sidebar.open { transform: translateX(0); }
+    #menu-btn { display: block; }
+    #content { padding: 16px; }
+    .chat-bubble { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="overlay-backdrop" id="backdrop" onclick="closeSidebar()"></div>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <h1>Edu<span>Track</span> Pro</h1>
+    <p>Smart Tuition Centre Manager · Python ML Backend</p>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('tutor',this)">🎓 Tutor</button>
+      <button class="login-tab" onclick="switchLoginTab('student',this)">👤 Student</button>
+    </div>
+    <div id="login-form">
+      <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="admin"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••"/></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Login →</button>
+      <div style="margin-top:12px;text-align:center;">
+        <button class="link-btn" onclick="showForgot()">Forgot Password?</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+  <nav id="sidebar">
+    <div class="sidebar-logo"><h2>Edu<span>Track</span></h2><p>Python ML Backend</p></div>
+    <div id="tutor-nav" style="display:none;">
+      <div class="sidebar-section">Main</div>
+      <button class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span> Dashboard</button>
+      <button class="nav-item" onclick="showPage('students')"><span class="icon">👥</span> Students</button>
+      <button class="nav-item" onclick="showPage('attendance')"><span class="icon">📅</span> Attendance</button>
+      <button class="nav-item" onclick="showPage('marks')"><span class="icon">📊</span> Test Marks</button>
+      <button class="nav-item" onclick="showPage('performance')"><span class="icon">📈</span> Performance</button>
+      <div class="sidebar-section">AI & ML</div>
+      <button class="nav-item" onclick="showPage('chat')" id="chat-nav-btn"><span class="icon">🤖</span> AI Assistant</button>
+      <button class="nav-item" onclick="showPage('ml')"><span class="icon">🧠</span> ML Analysis</button>
+      <div class="sidebar-section">Communication</div>
+      <button class="nav-item" onclick="showPage('notes')"><span class="icon">📝</span> Notes</button>
+      <button class="nav-item" onclick="showPage('announcements')"><span class="icon">📢</span> Announcements</button>
+      <button class="nav-item" onclick="showPage('fees')"><span class="icon">💰</span> Fees</button>
+      <div class="sidebar-section">Account</div>
+      <button class="nav-item" onclick="showPage('settings')"><span class="icon">⚙️</span> Settings</button>
+    </div>
+    <div id="student-nav" style="display:none;">
+      <div class="sidebar-section">Portal</div>
+      <button class="nav-item active" onclick="showPage('s-dashboard')"><span class="icon">🏠</span> Dashboard</button>
+      <button class="nav-item" onclick="showPage('s-notes')"><span class="icon">📝</span> Notes</button>
+      <button class="nav-item" onclick="showPage('s-attendance')"><span class="icon">📅</span> Attendance</button>
+      <button class="nav-item" onclick="showPage('s-marks')"><span class="icon">📊</span> My Marks</button>
+      <button class="nav-item" onclick="showPage('s-performance')"><span class="icon">📈</span> Performance</button>
+      <button class="nav-item" onclick="showPage('s-announcements')"><span class="icon">📢</span> Announcements</button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="role-badge-box">
+        <div class="role-name" id="sidebar-role-name">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="sidebar-role-sub">—</div>
+      </div>
+      <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:10px;" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div id="main">
+    <div id="topbar">
+      <button id="menu-btn" onclick="toggleSidebar()">☰</button>
+      <h1>Edu<span>Track</span> Pro</h1>
+      <span class="badge" id="role-badge">Tutor</span>
+    </div>
+
+    <div id="content">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">Dashboard <span>Overview</span></div>
+        <div class="grid-4" id="stats-grid"></div>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="card"><div class="card-title">Recent Announcements</div><div id="dash-anns"></div></div>
+          <div class="card"><div class="card-title">Fees Alert</div><div id="dash-fees"></div></div>
+        </div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div class="page" id="page-students">
+        <div class="page-title">Students <span>Management</span></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Add New Student</div>
+            <div class="form-group"><label>Full Name</label><input type="text" id="st-name"/></div>
+            <div class="form-group"><label>Class</label><input type="text" id="st-class"/></div>
+            <div class="form-group"><label>Parent Name</label><input type="text" id="st-parent"/></div>
+            <div class="form-group"><label>Fees Amount</label><input type="text" id="st-fees"/></div>
+            <div class="form-group"><label>Login Password (optional)</label><input type="password" id="st-pwd"/></div>
+            <div class="form-group"><label>Fees Due Date (optional)</label><input type="date" id="st-due"/></div>
+            <button class="btn btn-primary" onclick="addStudent()">+ Add Student</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Search Students</div>
+            <div class="form-group"><label>Search by Name</label><input type="text" id="search-name" oninput="renderStudentTable()"/></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">All Students</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>#</th><th>Name</th><th>Class</th><th>Parent</th><th>Fees</th><th>Due Date</th><th>Action</th></tr></thead>
+            <tbody id="students-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="page" id="page-attendance">
+        <div class="page-title">Attendance <span>Marksheet</span></div>
+        <div class="card">
+          <div class="flex-row">
+            <div class="form-group"><label>Select Date</label><input type="date" id="att-date"/></div>
+            <button class="btn btn-primary" onclick="openAttModal()">Mark Attendance</button>
+            <button class="btn btn-success" onclick="loadAttendanceTable()">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Attendance Summary</div>
+          <div class="table-wrap" id="att-table-wrap"></div>
+        </div>
+      </div>
+
+      <!-- MARKS -->
+      <div class="page" id="page-marks">
+        <div class="page-title">Test <span>Marks</span></div>
+        <div class="card">
+          <div class="card-title">Enter New Marks</div>
+          <div class="grid-2">
+            <div class="form-group"><label>Student</label><select id="marks-student"></select></div>
+            <div class="form-group"><label>Subject</label><input type="text" id="marks-subject" placeholder="e.g. Maths"/></div>
+            <div class="form-group"><label>Week (e.g. 2025-W15)</label><input type="text" id="marks-week"/></div>
+            <div class="form-group"><label>Marks Obtained</label><input type="text" id="marks-got"/></div>
+            <div class="form-group"><label>Total Marks</label><input type="text" id="marks-total" placeholder="e.g. 50"/></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveMarks()">💾 Save Marks</button>
+        </div>
+        <div class="card">
+          <div class="card-title">All Test Marks</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Week</th><th>Subject</th><th>Marks</th><th>Total</th><th>%</th><th>Action</th></tr></thead>
+            <tbody id="marks-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- PERFORMANCE -->
+      <div class="page" id="page-performance">
+        <div class="page-title">Weekly <span>Performance</span></div>
+        <div class="card">
+          <div class="flex-row">
+            <div class="form-group"><label>Student</label><select id="perf-student"></select></div>
+            <button class="btn btn-primary" onclick="loadPerformance()">Load</button>
+          </div>
+        </div>
+        <div id="perf-content"></div>
+      </div>
+
+      <!-- ML ANALYSIS -->
+      <div class="page" id="page-ml">
+        <div class="page-title">🧠 ML <span>Analysis</span></div>
+        <div class="grid-2">
+          <!-- Grade Prediction -->
+          <div class="card">
+            <div class="card-title">📈 Grade Predictor (Random Forest + LSTM)</div>
+            <div class="form-group"><label>Student</label><select id="ml-pred-student"></select></div>
+            <div class="form-group"><label>Subject</label><input type="text" id="ml-pred-subject" placeholder="e.g. Maths"/></div>
+            <button class="btn btn-purple" onclick="runGradePrediction()">🔮 Predict Next Grade</button>
+            <div id="ml-grade-result"></div>
+          </div>
+          <!-- Attendance Risk -->
+          <div class="card">
+            <div class="card-title">⚠️ Attendance Risk (Logistic Regression + Neural Net)</div>
+            <div class="form-group"><label>Student</label><select id="ml-risk-student"></select></div>
+            <button class="btn btn-red" onclick="runAttendanceRisk()">🔍 Analyse Risk</button>
+            <div id="ml-risk-result"></div>
+          </div>
+        </div>
+        <!-- Class Insights -->
+        <div class="card">
+          <div class="card-title">🏫 Class-Wide ML Insights</div>
+          <button class="btn btn-primary" onclick="loadClassInsights()">Load Insights</button>
+          <button class="btn btn-success" style="margin-left:8px;" onclick="trainModels()">🏋️ Retrain Models</button>
+          <div id="ml-insights-result" style="margin-top:16px;"></div>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="page" id="page-notes">
+        <div class="page-title">Student <span>Notes</span></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Add Note</div>
+            <div class="form-group"><label>Student Name</label>
+              <input type="text" id="note-student" list="note-student-list"/>
+              <datalist id="note-student-list"></datalist>
+            </div>
+            <div class="form-group"><label>Note Text</label><textarea id="note-text" placeholder="Write note here..."></textarea></div>
+            <div class="form-group"><label>Attach File (PDF / Image) — optional</label>
+              <div class="upload-area" onclick="document.getElementById('note-file-input').click()">
+                <div class="icon">📎</div>
+                <p id="file-label">Click to attach PDF or image</p>
+              </div>
+              <input type="file" id="note-file-input" accept="image/*,.pdf" style="display:none;" onchange="handleNoteFile(this)"/>
+            </div>
+            <button class="btn btn-primary" onclick="saveNote()">💾 Save Note</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Filter Notes</div>
+            <div class="form-group"><label>Filter by Student</label><input type="text" id="note-filter" oninput="renderNotes()" placeholder="Type to filter..."/></div>
+          </div>
+        </div>
+        <div id="notes-list"></div>
+      </div>
+
+      <!-- ANNOUNCEMENTS -->
+      <div class="page" id="page-announcements">
+        <div class="page-title">Announcements</div>
+        <div class="card">
+          <div class="card-title">Post New Announcement</div>
+          <div class="grid-2">
+            <div class="form-group"><label>Title</label><input type="text" id="ann-title"/></div>
+            <div class="form-group"><label>Type</label>
+              <select id="ann-type">
+                <option>General</option><option>Test Reminder</option><option>Holiday</option><option>Fee Reminder</option><option>Event</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Message</label><textarea id="ann-msg"></textarea></div>
+          <button class="btn btn-purple" onclick="postAnnouncement()">📢 Post Announcement</button>
+        </div>
+        <div id="ann-list"></div>
+      </div>
+
+      <!-- FEES -->
+      <div class="page" id="page-fees">
+        <div class="page-title">Fees <span>Due Dates</span></div>
+        <div class="card">
+          <div class="card-title">Set Due Date</div>
+          <div class="flex-row">
+            <div class="form-group"><label>Student</label><select id="fees-student"></select></div>
+            <div class="form-group"><label>Due Date</label><input type="date" id="fees-due"/></div>
+            <button class="btn btn-primary" onclick="setFeesDue()">Set</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fees Status</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Due Date</th><th>Days Left</th><th>Status</th></tr></thead>
+            <tbody id="fees-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="page-title">Account <span>Settings</span></div>
+        <div class="card" style="max-width:480px;">
+          <div class="card-title">Change Password</div>
+          <div class="form-group"><label>Current Password</label><input type="password" id="cur-pwd"/></div>
+          <div class="form-group"><label>New Password</label><input type="password" id="new-pwd"/></div>
+          <div class="form-group"><label>Confirm New Password</label><input type="password" id="con-pwd"/></div>
+          <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+        </div>
+        <div class="card" style="max-width:480px;margin-top:16px;">
+          <div class="card-title">Anthropic API Key (for AI Chatbot)</div>
+          <div class="form-group"><label>API Key</label><input type="password" id="api-key-input" placeholder="sk-ant-..."/></div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Stored in browser only. Used to power the AI chatbot. Without it, the chatbot uses rule-based responses.</p>
+          <button class="btn btn-purple" onclick="saveApiKey()">💾 Save API Key</button>
+        </div>
+      </div>
+
+      <!-- STUDENT PAGES -->
+      <div class="page" id="page-s-dashboard">
+        <div class="page-title" id="s-welcome-title">Welcome</div>
+        <div class="grid-3" id="s-stats-grid"></div>
+      </div>
+      <div class="page" id="page-s-notes">
+        <div class="page-title">My <span>Notes</span></div>
+        <div id="s-notes-list"></div>
+      </div>
+      <div class="page" id="page-s-attendance">
+        <div class="page-title">My <span>Attendance</span></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="s-att-tbody"></tbody>
+        </table></div>
+      </div>
+      <div class="page" id="page-s-marks">
+        <div class="page-title">My <span>Test Marks</span></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Week</th><th>Subject</th><th>Marks</th><th>Total</th><th>%</th></tr></thead>
+          <tbody id="s-marks-tbody"></tbody>
+        </table></div>
+      </div>
+      <div class="page" id="page-s-performance">
+        <div class="page-title">My <span>Performance</span></div>
+        <div id="s-perf-content"></div>
+      </div>
+      <div class="page" id="page-s-announcements">
+        <div class="page-title">Announcements</div>
+        <div id="s-ann-list"></div>
+      </div>
+    </div><!-- #content -->
+
+    <!-- CHAT (full height) -->
+    <div class="page" id="chat-page">
+      <div id="chat-messages"></div>
+      <div id="chat-input-row">
+        <textarea id="chat-input" placeholder="Ask about students, attendance, marks..." onkeydown="chatKeydown(event)" rows="1"></textarea>
+        <button class="btn btn-red" onclick="sendChat()" style="height:48px;padding:0 20px;">Send ➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ATTENDANCE MODAL -->
+<div class="modal-overlay hidden" id="att-modal">
+  <div class="modal">
+    <h2>Mark Attendance — <span id="att-modal-date"></span></h2>
+    <div id="att-modal-list"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('att-modal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAttendance()">💾 Save Attendance</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="forgot-modal">
+  <div class="modal">
+    <h2>Reset Password</h2>
+    <div id="forgot-form"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('forgot-modal').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
